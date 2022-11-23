@@ -16,10 +16,13 @@ public enum ErrorCode {
     TRANSACTION_ACCOUNT_UN_MATCH("이 거래는 해당 계좌에서 발한 거래가 아닙니다."),
     CANCEL_MUST_FULLY("부분 취소는 허용되지 않습니다."),
     TOO_OLD_ORDER_TO_CANCEL("1년이 지난 거래는 취소가 불가능합니다."),
+    CANNOT_CANCEL("이미 취소된 거래는 취소가 불가능합니다."),
+    CANNOT_CANCEL_TRANSACTION_FOR_CANCEL("취소 목적의 거래는 취소가 불가능합니다."),
     USER_ACCOUNT_UN_MATCH("사용자와 계좌의 소유주가 다릅니다."),
     ACCOUNT_ALREADY_UNREGISTERED("계좌가 이미 해지되었습니다."),
     BALANCE_NOT_EMPTY("잔액이 있는 계좌는 해지할 수 없습니다."),
-    MAX_ACCOUNT_PER_USER_10("사용자 최대 계좌는 10개 입니다.");
+    MAX_ACCOUNT_PER_USER_10("사용자 최대 계좌는 10개 입니다."),
+    INSUFFICIENT_ACCOUNT_NUMBER("사용가능한 계좌번호 수가 부족합니다.");
 
     private final String description;
 }

@@ -7,7 +7,6 @@ import com.example.account.exception.AccountException;
 import com.example.account.repository.AccountRepository;
 import com.example.account.repository.AccountUserRepository;
 import com.example.account.type.AccountStatus;
-import com.example.account.type.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -37,11 +36,9 @@ public class AccountService {
     public AccountDto createAccount(Long userId, Long initialBalance){
         AccountUser accountUser = getAccountUser(userId);
 
-        validateCreateAccount(accountUser);
+        String newAccountNumber = createNewAccountNumber();
 
-        String newAccountNumber = accountRepository.findFirstByOrderByIdDesc()
-                .map(account -> (Integer.parseInt(account.getAccountNumber())) + 1 + "")
-                .orElse("1000000000");
+        validateCreateAccount(accountUser, newAccountNumber);
 
         return AccountDto.fromEntity(
                 accountRepository.save(Account.builder()
@@ -54,9 +51,35 @@ public class AccountService {
         );
     }
 
-    private void validateCreateAccount(AccountUser accountUser) {
-        if(accountRepository.countByAccountUser(accountUser) >= 10) {
+    private String createNewAccountNumber(){
+
+        // 10자리 숫자 랜덤 생성
+        String NewAccount = "";
+        int count = 0;
+
+        while(count < 10000) {
+
+            for (int i = 0; i < 10; i++) {
+                NewAccount += (int) (Math.random() * 10);
+            }
+
+            Integer numberOfAccount = accountRepository.countByAccountNumber(NewAccount);
+
+            if(numberOfAccount == 0) break; //db에 중복되는 계좌번호가 없으면 해당 계좌를 사용.
+
+            NewAccount = "";
+            count += 1;
+        }
+
+        return NewAccount;
+    }
+
+    private void validateCreateAccount(AccountUser accountUser, String newAccountNumber) {
+        if(accountRepository.countByAccountUserAndAccountStatus(accountUser, IN_USE) >= 10) {
             throw new AccountException(MAX_ACCOUNT_PER_USER_10);
+        }
+        if("".equals(newAccountNumber)) {
+            throw new AccountException(INSUFFICIENT_ACCOUNT_NUMBER);
         }
     }
 

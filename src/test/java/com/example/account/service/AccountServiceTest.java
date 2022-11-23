@@ -5,7 +5,6 @@ import com.example.account.domain.AccountUser;
 import com.example.account.dto.AccountDto;
 import com.example.account.exception.AccountException;
 import com.example.account.repository.AccountUserRepository;
-import com.example.account.type.AccountStatus;
 import com.example.account.repository.AccountRepository;
 import com.example.account.type.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.example.account.type.AccountStatus.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -46,10 +46,6 @@ class AccountServiceTest {
         user.setId(12L);
         given(accountUserRepository.findById(anyLong()))
                 .willReturn(Optional.of(user));
-        given(accountRepository.findFirstByOrderByIdDesc())
-                .willReturn(Optional.of(Account.builder()
-                                .accountUser(user)
-                                .accountNumber("1000000012").build()));
         given(accountRepository.save(any()))
                 .willReturn(Account.builder()
                         .accountUser(user)
@@ -64,34 +60,7 @@ class AccountServiceTest {
         //then
         verify(accountRepository, times(1)).save(captor.capture());
         assertEquals(12L, accountDto.getUserId());
-        assertEquals("1000000013", captor.getValue().getAccountNumber());
-    }
-
-    @Test
-    void createFirstAccount() {
-        //given
-        AccountUser user = AccountUser.builder()
-                .name("Pobi").build();
-        user.setId(15L);
-        given(accountUserRepository.findById(anyLong()))
-                .willReturn(Optional.of(user));
-        given(accountRepository.findFirstByOrderByIdDesc())
-                .willReturn(Optional.empty());
-        given(accountRepository.save(any()))
-                .willReturn(Account.builder()
-                        .accountUser(user)
-                        .accountNumber("1000000013").build());
-
-        ArgumentCaptor<Account> captor = ArgumentCaptor.forClass(Account.class);
-
-
-        //when
-        AccountDto accountDto = accountService.createAccount(1L, 1000L);
-
-        //then
-        verify(accountRepository, times(1)).save(captor.capture());
-        assertEquals(15L, accountDto.getUserId());
-        assertEquals("1000000000", captor.getValue().getAccountNumber());
+        assertEquals(10, captor.getValue().getAccountNumber().length());
     }
 
     @Test
@@ -118,7 +87,7 @@ class AccountServiceTest {
         user.setId(15L);
         given(accountUserRepository.findById(anyLong()))
                 .willReturn(Optional.of(user));
-        given(accountRepository.countByAccountUser(any()))
+        given(accountRepository.countByAccountUserAndAccountStatus(any(), any()))
                 .willReturn(10);
         //when
         AccountException exception = assertThrows(AccountException.class,
@@ -126,6 +95,28 @@ class AccountServiceTest {
 
         //then
         assertEquals(ErrorCode.MAX_ACCOUNT_PER_USER_10, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("사용가능한 남은 10자리 계좌번호 개수 부족 경고")
+    void createAccount_InsufficientNumberOfRemainingAccountNumbers() {
+        //given
+        AccountUser user = AccountUser.builder()
+                .name("Pobi").build();
+        user.setId(15L);
+        given(accountUserRepository.findById(anyLong()))
+                .willReturn(Optional.of(user));
+        given(accountRepository.countByAccountNumber(anyString()))
+                .willReturn(1);
+        given(accountRepository.countByAccountUserAndAccountStatus(any(), any()))
+                .willReturn(0);
+
+        //when
+        AccountException exception = assertThrows(AccountException.class,
+                () -> accountService.createAccount(1L, 1000L));
+
+        //then
+        assertEquals(ErrorCode.INSUFFICIENT_ACCOUNT_NUMBER, exception.getErrorCode());
     }
 
     @Test
@@ -151,7 +142,7 @@ class AccountServiceTest {
         verify(accountRepository, times(1)).save(captor.capture());
         assertEquals(12L, accountDto.getUserId());
         assertEquals("1000000012", captor.getValue().getAccountNumber());
-        assertEquals(AccountStatus.UNREGISTERED, captor.getValue().getAccountStatus());
+        assertEquals(UNREGISTERED, captor.getValue().getAccountStatus());
     }
 
     @Test
@@ -248,7 +239,7 @@ class AccountServiceTest {
         given(accountRepository.findByAccountNumber(anyString()))
                 .willReturn(Optional.of(Account.builder()
                         .accountUser(pobi)
-                        .accountStatus(AccountStatus.UNREGISTERED)
+                        .accountStatus(UNREGISTERED)
                         .balance(0L)
                         .accountNumber("1000000012").build()));
         //when
