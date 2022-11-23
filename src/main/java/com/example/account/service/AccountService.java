@@ -53,13 +53,14 @@ public class AccountService {
 
     private String createNewAccountNumber(){
 
-        // 10자리 숫자 랜덤 생성
         String NewAccount = "";
         int count = 0;
 
+        //랜덤 계좌번호를 생성하여 db에서 찾아보고 이미 등록되어 있으면 다시 생성.
+        //사용가능한 번호를 찾을때까지 최대 10000번 반복하고 그때까지 못찾으면 사용가능한 계좌번호의 수가 부족하다는 경고메시지를 보냄(validate 과정에서).
         while(count < 10000) {
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 10; i++) {   // 10자리 숫자 랜덤 생성
                 NewAccount += (int) (Math.random() * 10);
             }
 
